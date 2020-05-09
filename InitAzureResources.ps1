@@ -4,6 +4,9 @@ $resourceGroup = "ServiceBus.GettingStarted"
 $location = "westeurope"
 $sbNamespaceName = "adefalquesb"
 $sbQueueName = "queue1"
+$sbTopicName = "topic1"
+$sbFirstSubscriptionName = "subscription1"
+$sbSecondSubscriptionName = "subscription2"
 
 Get-AzResourceGroup -Name $resourceGroup -ErrorVariable groupDoesNotExist -ErrorAction SilentlyContinue
 if ($groupDoesNotExist)
@@ -35,5 +38,38 @@ if ($queueDoesNotExist)
 }
 else
 {
-    Write-Host "Service Bus Queue $($sbNamespaceName) already exists" 
+    Write-Host "Service Bus Queue $($sbQueueName) already exists" 
+}
+
+Get-AzServiceBusTopic -ResourceGroupName $resourceGroup -NamespaceName $sbNamespaceName -Name $sbTopicName -ErrorVariable topicDoesNotExist -ErrorAction SilentlyContinue
+if ($topicDoesNotExist)
+{
+    Write-Host "Creating Service Bus Topic $($sbTopicName)"
+    New-AzServiceBusTopic -ResourceGroupName $resourceGroup -NamespaceName $sbNamespaceName -Name $sbTopicName -EnablePartitioning $False
+}
+else
+{
+    Write-Host "Service Bus Topic $($sbTopicName) already exists" 
+}
+
+Get-AzServiceBusSubscription -ResourceGroupName $resourceGroup -NamespaceName $sbNamespaceName -Topic $sbTopicName -Name $sbFirstSubscriptionName -ErrorVariable subDoesNotExist -ErrorAction SilentlyContinue
+if ($subDoesNotExist)
+{
+    Write-Host "Creating Service Bus Subscription $($sbFirstSubscriptionName)"
+    New-AzServiceBusSubscription -ResourceGroupName $resourceGroup -NamespaceName $sbNamespaceName -Topic $sbTopicName -Name $sbFirstSubscriptionName
+}
+else
+{
+    Write-Host "Service Bus Subscription $($sbFirstSubscriptionName) already exists" 
+}
+
+Get-AzServiceBusSubscription -ResourceGroupName $resourceGroup -NamespaceName $sbNamespaceName -Topic $sbTopicName -Name $sbSecondSubscriptionName -ErrorVariable subDoesNotExist -ErrorAction SilentlyContinue
+if ($subDoesNotExist)
+{
+    Write-Host "Creating Service Bus Subscription $($sbSecondSubscriptionName)"
+    New-AzServiceBusSubscription -ResourceGroupName $resourceGroup -NamespaceName $sbNamespaceName -Topic $sbTopicName -Name $sbSecondSubscriptionName
+}
+else
+{
+    Write-Host "Service Bus Subscription $($sbSecondSubscriptionName) already exists" 
 }

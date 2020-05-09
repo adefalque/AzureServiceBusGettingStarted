@@ -3,6 +3,7 @@ using Microsoft.Azure.ServiceBus;
 using System;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Azure.ServiceBus.Core;
 using Newtonsoft.Json;
 
 namespace Azure.ServiceBus.GettingStarted.Publisher
@@ -13,10 +14,12 @@ namespace Azure.ServiceBus.GettingStarted.Publisher
         {
             var connectionString = args[0];
             var queueName = "queue1";
+            var topicName = "topic1";
 
-            var queueClient = new QueueClient(connectionString, queueName);
+            ISenderClient queueClient = new QueueClient(connectionString, queueName);
+            ISenderClient topicClient = new TopicClient(connectionString, topicName);
 
-            Console.WriteLine("Press any key to send a new random contact to queue... Press Ctrl+C to exit");
+            Console.WriteLine("Press any key to send a new random contact to queue and topic... Press Ctrl+C to exit");
 
             while (true)
             {
@@ -26,11 +29,13 @@ namespace Azure.ServiceBus.GettingStarted.Publisher
                 var body = Encoding.UTF8.GetBytes(messageText);
                 var message = new Message(body);
 
-                Console.WriteLine("Sending contact...");
+                Console.WriteLine($"Sending contact  {messageText}...");
+
                 await queueClient.SendAsync(message);
-                
-                Console.WriteLine($"Contact {messageText} has been sent to queue\r\n");
-                Console.WriteLine($"Enqueued at {message.SystemProperties.EnqueuedTimeUtc:o}\r\n");
+                Console.WriteLine($"Contact has been sent to queue\r\n");
+
+                await topicClient.SendAsync(message);
+                Console.WriteLine($"Contact has been sent to topic\r\n");
             }
         }
 

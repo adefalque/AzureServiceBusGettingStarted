@@ -8,26 +8,50 @@ namespace Azure.ServiceBus.GettingStarted.Subscriber
 {
     class Program
     {
+        const string queueName = "queue1";
+        const string topicName = "topic1";
+        const string firstSubName = "subscription1";
+        const string secondSubName = "subscription2";
+        private const ConsoleColor queueConsoleColor = ConsoleColor.Green;
+        private const ConsoleColor sub1ConsoleColor = ConsoleColor.Magenta;
+        private const ConsoleColor sub2ConsoleColor = ConsoleColor.Blue;
+
+        private static object lockMessageHandle = new object();
+
         static void Main(string[] args)
         {
             var connectionString = args[0];
-            var queueName = "queue1";
 
             var queueClient = new QueueClient(connectionString, queueName);
-            
-            var messageHandlerOptions = new MessageHandlerOptions(OnException);
-            queueClient.RegisterMessageHandler(OnMessage, messageHandlerOptions);
-            
+            queueClient.RegisterMessageHandler(
+                (message, token) => HandleMessage(message, queueName, queueConsoleColor), 
+                new MessageHandlerOptions(OnException));
+
+            var firstSubscriptionClient = new SubscriptionClient(connectionString, topicName, firstSubName);
+            firstSubscriptionClient.RegisterMessageHandler(
+                (message, token) => HandleMessage(message, firstSubName, sub1ConsoleColor), 
+                new MessageHandlerOptions(OnException));
+
+            var secondSubscriptionClient = new SubscriptionClient(connectionString, topicName, secondSubName);
+            secondSubscriptionClient.RegisterMessageHandler(
+                (message, token) => HandleMessage(message, secondSubName, sub2ConsoleColor), 
+                new MessageHandlerOptions(OnException));
+
             Console.WriteLine("Listening, press any key");
             Console.ReadKey();
         }
 
-        static Task OnMessage(Message m, CancellationToken ct)
+        static Task HandleMessage(Message m, string handlerName, ConsoleColor color)
         {
-            var messageText = Encoding.UTF8.GetString(m.Body);
-            Console.WriteLine("Got a message:");
-            Console.WriteLine(messageText);
-            Console.WriteLine($"Enqueued at {m.SystemProperties.EnqueuedTimeUtc:o}");
+            lock (lockMessageHandle)
+            {
+                var messageText = Encoding.UTF8.GetString(m.Body);
+                WriteLineColor($"[${handlerName}] Got a message:", color);
+                WriteLineColor(messageText, color);
+                WriteLineColor($"[${handlerName}] Enqueued at {m.SystemProperties.EnqueuedTimeUtc:o}", color);
+                Console.WriteLine();
+            }
+
             return Task.CompletedTask;
         }
 
@@ -37,6 +61,13 @@ namespace Azure.ServiceBus.GettingStarted.Subscriber
             Console.WriteLine(args.Exception.Message);
             Console.WriteLine(args.ExceptionReceivedContext.ToString());
             return Task.CompletedTask;
+        }
+
+        static void WriteLineColor(string s, ConsoleColor color = ConsoleColor.Gray)
+        {
+            Console.ForegroundColor = color;
+            Console.WriteLine(s);
+            Console.ResetColor();
         }
     }
 }
